@@ -99,7 +99,7 @@ export const LESSONS: readonly Lesson[] = [
     objective: 'Multiply out parentheses, or divide them away, to solve.',
     intro: 'A number in front of parentheses multiplies everything inside.',
     explanation:
-      'In 2(x + 3) = 14, you can distribute the 2 to get 2x + 6 = 14, or divide both sides by 2 to get x + 3 = 7. Both ways are valid.',
+      'In 2(x + 3) = 14, you can distribute the 2 to get 2x + 6 = 14. (Dividing both sides by 2 first is also valid; a teacher can allow it in Settings.)',
     workedExample: '2(x + 3) = 14',
     problems: ['3(x + 2) = 18', '2(x - 4) = 6', '4(x + 1) - 3 = 17', '-(x + 3) = 2', '5(x - 2) = 3x + 4'],
     summary: 'Distribute the outside number to each term inside, then solve as usual.',

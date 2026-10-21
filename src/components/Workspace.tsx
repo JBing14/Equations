@@ -4,6 +4,7 @@ import type { Rational } from '../engine/rational';
 import type { Equation, Side } from '../engine/types';
 import { sideTerms } from '../engine/types';
 import type { Command } from '../engine/moves';
+import type { MoveRules } from '../engine/moves';
 import { applyCommand, availableCombines } from '../engine/moves';
 import { formatSignedTerm, formatRational } from '../engine/format';
 import { parseNumber } from '../engine/parser';
@@ -85,7 +86,13 @@ export function Workspace(props: WorkspaceProps) {
   callbacks.current = props;
 
   // ---- hints (computed from the equation actually on screen)
-  const hints = useMemo(() => hintsFor(activeEq), [activeEq]);
+  const rules: MoveRules = useMemo(
+    () => ({ allowDivideFirst: prefs.allowDivideFirst, forceDistributeFirst: prefs.forceDistributeFirst }),
+    [prefs.allowDivideFirst, prefs.forceDistributeFirst],
+  );
+  const rulesRef = useRef(rules);
+  rulesRef.current = rules;
+  const hints = useMemo(() => hintsFor(activeEq, rules), [activeEq, rules]);
   const hintTarget = state.hintsShown >= 4 && !busy ? hints.target : null;
 
   // ---- animation clock: purely visual, the move is already recorded
@@ -103,7 +110,7 @@ export function Workspace(props: WorkspaceProps) {
     callbacks.current.onCommands?.(commands);
   }, [commands]);
 
-  const commit = useCallback((command: Command) => dispatch({ type: 'commit', command, animate: factor > 0 }), [factor]);
+  const commit = useCallback((command: Command) => dispatch({ type: 'commit', command, animate: factor > 0, rules }), [factor, rules]);
 
   const toggleSelect = useCallback((source: Selection) => {
     if (live.current.busy) return;
@@ -116,8 +123,6 @@ export function Workspace(props: WorkspaceProps) {
   const lastZoneKey = useRef('');
   const cleanupRef = useRef<(() => void) | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; label: string; valid: boolean | null; flipped: boolean } | null>(null);
-  const shortcutRef = useRef(prefs.signShortcut);
-  shortcutRef.current = prefs.signShortcut;
 
   useEffect(() => () => cleanupRef.current?.(), []);
 
@@ -158,10 +163,10 @@ export function Workspace(props: WorkspaceProps) {
         dispatch({ type: 'dragStart', source: d.source });
       }
       const zone = zoneAt(ev.clientX, ev.clientY);
-      const evaluation = zone ? evaluateDrop(live.current.eq, d.source, zone) : null;
-      // Live sign change: with the shortcut switched on, a term shows its opposite sign while it hovers over the other side.
+      const evaluation = zone ? evaluateDrop(live.current.eq, d.source, zone, rulesRef.current) : null;
+      // Live sign change: a term shows its opposite sign while it hovers over the other side.
       const crossing =
-        shortcutRef.current && d.source.kind === 'term' && zone !== null && zone.side !== d.source.side && evaluation !== null && evaluation.valid;
+        d.source.kind === 'term' && zone !== null && zone.side !== d.source.side && evaluation !== null && evaluation.valid;
       setGhost({ x: ev.clientX, y: ev.clientY, label: crossing ? flipLabel(d.label) : d.label, valid: evaluation ? evaluation.valid : null, flipped: crossing });
       const key = `${JSON.stringify(zone)}|${evaluation ? evaluation.valid : 'n'}`;
       if (key !== lastZoneKey.current) {
@@ -179,7 +184,7 @@ export function Workspace(props: WorkspaceProps) {
         return;
       }
       const zone = zoneAt(ev.clientX, ev.clientY);
-      dispatch({ type: 'dragEnd', evaluation: evaluateDrop(live.current.eq, d.source, zone) });
+      dispatch({ type: 'dragEnd', evaluation: evaluateDrop(live.current.eq, d.source, zone, rulesRef.current) });
     };
     const cancel = (ev: PointerEvent): void => {
       const d = dragRef.current;
@@ -264,7 +269,7 @@ export function Workspace(props: WorkspaceProps) {
   };
 
   // ---- worked solution
-  const solution = useMemo(() => (revealed ? solveSteps(original) : []), [revealed, original]);
+  const solution = useMemo(() => (revealed ? solveSteps(original, undefined, rules) : []), [revealed, original, rules]);
   const reveal = (): void => {
     setRevealed(true);
     revealedRef.current = true;
@@ -304,6 +309,7 @@ export function Workspace(props: WorkspaceProps) {
             state={state}
             activeEq={activeEq}
             shortcut={prefs.signShortcut}
+            rules={rules}
             onCommit={commit}
             onPreview={(command) => dispatch({ type: 'preview', command })}
             onDeselect={() => dispatch({ type: 'deselect' })}
@@ -456,12 +462,13 @@ interface GuideProps {
   state: WorkspaceState;
   activeEq: Equation;
   shortcut: boolean;
+  rules: MoveRules;
   onCommit: (c: Command) => void;
   onPreview: (c: Command | null) => void;
   onDeselect: () => void;
 }
 
-function Guide({ state, activeEq, shortcut, onCommit, onPreview, onDeselect }: GuideProps) {
+function Guide({ state, activeEq, shortcut, rules, onCommit, onPreview, onDeselect }: GuideProps) {
   const { selection, drag, lastMove, phase, feedback, previewCommand } = state;
   const inspecting = state.history.inspect !== null;
   let content: ReactNode;
@@ -479,7 +486,7 @@ function Guide({ state, activeEq, shortcut, onCommit, onPreview, onDeselect }: G
       </p>
     );
   } else if (selection) {
-    content = <SelectionPanel eq={activeEq} selection={selection} previewCommand={previewCommand} onCommit={onCommit} onPreview={onPreview} onDeselect={onDeselect} />;
+    content = <SelectionPanel rules={rules} eq={activeEq} selection={selection} previewCommand={previewCommand} onCommit={onCommit} onPreview={onPreview} onDeselect={onDeselect} />;
   } else if (lastMove) {
     const m = lastMove.data;
     content = (
@@ -516,7 +523,7 @@ function Guide({ state, activeEq, shortcut, onCommit, onPreview, onDeselect }: G
   );
 }
 
-function SelectionPanel({ eq, selection, previewCommand, onCommit, onPreview, onDeselect }: { eq: Equation; selection: Selection; previewCommand: Command | null; onCommit: (c: Command) => void; onPreview: (c: Command | null) => void; onDeselect: () => void }) {
+function SelectionPanel({ rules, eq, selection, previewCommand, onCommit, onPreview, onDeselect }: { rules: MoveRules; eq: Equation; selection: Selection; previewCommand: Command | null; onCommit: (c: Command) => void; onPreview: (c: Command | null) => void; onDeselect: () => void }) {
   const terms = sideTerms(eq, selection.side);
   const term = terms[selection.index];
   if (!term) return null;
@@ -532,7 +539,7 @@ function SelectionPanel({ eq, selection, previewCommand, onCommit, onPreview, on
     selection.kind === 'term'
       ? `You picked ${formatSignedTerm(term, eq)} on the ${selection.side} side.`
       : `You picked the number attached to ${eq.variable} on the ${selection.side} side.`;
-  const preview = previewCommand ? applyCommand(eq, previewCommand) : null;
+  const preview = previewCommand ? applyCommand(eq, previewCommand, rules) : null;
 
   return (
     <div className="selection-panel" data-testid="selection-panel">
@@ -540,7 +547,7 @@ function SelectionPanel({ eq, selection, previewCommand, onCommit, onPreview, on
       <p className="muted">Choose what to do:</p>
       <div className="btn-row">
         {options.map((cmd, i) => {
-          const r = applyCommand(eq, cmd);
+          const r = applyCommand(eq, cmd, rules);
           return (
             <button
               key={i}
@@ -563,7 +570,7 @@ function SelectionPanel({ eq, selection, previewCommand, onCommit, onPreview, on
         </button>
       </div>
       {options.map((cmd, i) => {
-        const r = applyCommand(eq, cmd);
+        const r = applyCommand(eq, cmd, rules);
         return !r.ok && i === 0 ? (
           <p key={i} className="error-msg" role="alert">
             {r.error.message}

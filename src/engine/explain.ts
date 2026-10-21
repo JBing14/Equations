@@ -1,8 +1,8 @@
 import type { Rational } from './rational';
 import type { Equation } from './types';
 import { sideTerms } from './types';
-import type { Command } from './moves';
-import { applyCommand } from './moves';
+import type { Command, MoveRules } from './moves';
+import { applyCommand, NO_RULES } from './moves';
 import { formatRational, formatSignedTerm } from './format';
 import { evaluateSides, solutionSet } from './linear';
 import { status } from './status';
@@ -32,12 +32,12 @@ export interface HintSet {
 }
 
 /** Hints computed from the equation that is on screen right now. */
-export function hintsFor(eq: Equation): HintSet {
+export function hintsFor(eq: Equation, rules: MoveRules = NO_RULES): HintSet {
   const st = status(eq);
   if (st.kind !== 'working') {
     return { levels: [], target: null, finished: true };
   }
-  const s = suggestMove(eq);
+  const s = suggestMove(eq, rules);
   if (!s) {
     return {
       levels: ['This equation is outside what Equation Explorer can step through. Try undoing a move or starting over.'],
@@ -46,7 +46,7 @@ export function hintsFor(eq: Equation): HintSet {
     };
   }
   const v = eq.variable;
-  const applied = applyCommand(eq, s.command);
+  const applied = applyCommand(eq, s.command, rules);
   const label = applied.ok ? applied.move.label : 'the next operation';
   const targetText = describeTarget(eq, s.command);
   const t = 'index' in s.command ? sideTerms(eq, s.command.side)[s.command.index] : undefined;

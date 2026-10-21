@@ -2,7 +2,8 @@ import { Rational } from './rational';
 import type { Equation, Side } from './types';
 import { otherSide, sideTerms, signedCoef } from './types';
 import type { Command, MoveData } from './moves';
-import { applyCommand, availableCombines, factorOf } from './moves';
+import type { MoveRules } from './moves';
+import { applyCommand, availableCombines, factorOf, NO_RULES } from './moves';
 import { status } from './status';
 
 /**
@@ -22,7 +23,7 @@ export interface Suggestion {
   readonly reason: SuggestionReason;
 }
 
-export function suggestMove(eq: Equation): Suggestion | null {
+export function suggestMove(eq: Equation, rules: MoveRules = NO_RULES): Suggestion | null {
   if (status(eq).kind !== 'working') return null;
 
   // 1. Parentheses
@@ -33,6 +34,8 @@ export function suggestMove(eq: Equation): Suggestion | null {
     const t = terms[idx];
     const o = sideTerms(eq, otherSide(side));
     if (
+      rules.allowDivideFirst &&
+      !rules.forceDistributeFirst &&
       terms.length === 1 &&
       t.sign === 1 &&
       t.coef.isInteger() &&
@@ -82,13 +85,13 @@ export function suggestMove(eq: Equation): Suggestion | null {
 export const MAX_SOLVE_STEPS = 60;
 
 /** Solve an equation by repeatedly applying the suggested move. */
-export function solveSteps(eq: Equation, maxSteps = MAX_SOLVE_STEPS): MoveData[] {
+export function solveSteps(eq: Equation, maxSteps = MAX_SOLVE_STEPS, rules: MoveRules = NO_RULES): MoveData[] {
   const steps: MoveData[] = [];
   let current = eq;
   while (steps.length < maxSteps) {
-    const s = suggestMove(current);
+    const s = suggestMove(current, rules);
     if (!s) break;
-    const r = applyCommand(current, s.command);
+    const r = applyCommand(current, s.command, rules);
     if (!r.ok) break;
     steps.push(r.move);
     current = r.move.after;

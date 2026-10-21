@@ -1,5 +1,5 @@
 import type { Equation } from '../engine/types';
-import type { Command, MoveData, MoveError } from '../engine/moves';
+import type { Command, MoveData, MoveError, MoveRules } from '../engine/moves';
 import { applyCommand } from '../engine/moves';
 
 /**
@@ -61,7 +61,7 @@ export type CommitResult =
   | { readonly ok: false; readonly state: HistoryState; readonly error: MoveError };
 
 /** Validate a command against the active equation and, only if valid, record exactly one move. */
-export function tryCommand(h: HistoryState, command: Command, now: number = Date.now()): CommitResult {
+export function tryCommand(h: HistoryState, command: Command, now: number = Date.now(), rules?: MoveRules): CommitResult {
   if (h.inspect !== null) {
     return {
       ok: false,
@@ -69,7 +69,7 @@ export function tryCommand(h: HistoryState, command: Command, now: number = Date
       error: { code: 'bad-target', message: 'You are looking at an earlier step. Return to the latest step to keep working.' },
     };
   }
-  const result = applyCommand(currentEquation(h), command);
+  const result = applyCommand(currentEquation(h), command, rules);
   if (!result.ok) return { ok: false, state: h, error: result.error };
   const counter = h.counter + 1;
   const record: MoveRecord = { id: `m${counter}`, index: h.cursor + 1, data: result.move, timestamp: now };

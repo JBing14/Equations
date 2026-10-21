@@ -1,5 +1,5 @@
 import type { Equation } from '../engine/types';
-import type { Command } from '../engine/moves';
+import type { Command, MoveRules } from '../engine/moves';
 import { speakEquation } from '../engine/format';
 import type { HistoryState, MoveRecord } from '../history/history';
 import {
@@ -95,7 +95,7 @@ export type WorkspaceAction =
   | { type: 'dragOver'; evaluation: DropEvaluation | null; zone?: DropZone | null }
   | { type: 'dragEnd'; evaluation: DropEvaluation | null }
   | { type: 'dragCancel' }
-  | { type: 'commit'; command: Command; animate: boolean; now?: number }
+  | { type: 'commit'; command: Command; animate: boolean; now?: number; rules?: MoveRules }
   | { type: 'advance'; moveId: string }
   | { type: 'skipAnimation' }
   | { type: 'undo' }
@@ -166,7 +166,7 @@ export function workspaceReducer(s: WorkspaceState, a: WorkspaceAction): Workspa
     }
     case 'commit': {
       if (isBusy(s)) return s;
-      const r = tryCommand(s.history, a.command, a.now);
+      const r = tryCommand(s.history, a.command, a.now, a.rules);
       if (!r.ok) {
         return {
           ...s,

@@ -1,6 +1,6 @@
 import type { Equation, Side } from '../engine/types';
 import { areLike, otherSide, sideTerms } from '../engine/types';
-import type { Command } from '../engine/moves';
+import type { Command, MoveRules } from '../engine/moves';
 import { applyCommand } from '../engine/moves';
 
 /**
@@ -39,7 +39,7 @@ export function commandForSelection(sel: Selection): Command {
 }
 
 /** Decide whether dropping `source` on `zone` is a valid operation. Nothing is changed here. */
-export function evaluateDrop(eq: Equation, source: Selection, zone: DropZone): DropEvaluation {
+export function evaluateDrop(eq: Equation, source: Selection, zone: DropZone, rules?: MoveRules): DropEvaluation {
   if (zone === null) return { valid: false, command: null, reason: NOWHERE };
 
   if (zone.side !== otherSide(source.side)) {
@@ -50,7 +50,7 @@ export function evaluateDrop(eq: Equation, source: Selection, zone: DropZone): D
       const b = terms[zone.index];
       if (a && b && areLike(a, b)) {
         const command: Command = { type: 'combine', side: source.side, kind: a.core.kind as 'const' | 'var' };
-        const r = applyCommand(eq, command);
+        const r = applyCommand(eq, command, rules);
         if (r.ok) return { valid: true, command, reason: r.move.label };
       }
       return { valid: false, command: null, reason: 'Only like terms can be combined: plain numbers with numbers, or the letter with the letter.' };
@@ -62,7 +62,7 @@ export function evaluateDrop(eq: Equation, source: Selection, zone: DropZone): D
   }
 
   const command = commandForSelection(source);
-  const r = applyCommand(eq, command);
+  const r = applyCommand(eq, command, rules);
   if (!r.ok) return { valid: false, command: null, reason: r.error.message };
   return { valid: true, command, reason: r.move.label };
 }

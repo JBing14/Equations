@@ -25,6 +25,10 @@ export interface Prefs {
   showBalance: boolean;
   /** Show the "move it and change the sign" shortcut after each step. Off by default. */
   signShortcut: boolean;
+  /** Allow "divide both sides" on a term that still has parentheses. Off by default (too confusing as a first move). */
+  allowDivideFirst: boolean;
+  /** Make students distribute parentheses before any other move. Off by default. */
+  forceDistributeFirst: boolean;
   /** Explore mode: every lesson is unlocked. */
   explore: boolean;
   /** Percent of lesson questions that must be right the first time to unlock the next lesson. */
@@ -92,6 +96,8 @@ export const defaultPrefs = (): Prefs => ({
   motion: 'system',
   showBalance: true,
   signShortcut: false,
+  allowDivideFirst: false,
+  forceDistributeFirst: false,
   explore: false,
   masteryPercent: 80,
 });
@@ -239,6 +245,8 @@ export function validateData(raw: unknown): StoreData {
     motion: oneOf(prefs.motion, ['system', 'reduced', 'full'] as const, d.prefs.motion),
     showBalance: bool(prefs.showBalance, d.prefs.showBalance),
     signShortcut: bool(prefs.signShortcut, d.prefs.signShortcut),
+    allowDivideFirst: bool(prefs.allowDivideFirst, d.prefs.allowDivideFirst),
+    forceDistributeFirst: bool(prefs.forceDistributeFirst, d.prefs.forceDistributeFirst),
     explore: bool(prefs.explore, d.prefs.explore),
     masteryPercent: int(prefs.masteryPercent, 20, 100, d.prefs.masteryPercent),
   };

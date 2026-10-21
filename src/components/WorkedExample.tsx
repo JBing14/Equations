@@ -1,13 +1,18 @@
 import { useMemo, useState } from 'react';
 import { parseEquation } from '../engine/parser';
 import { solveSteps } from '../engine/strategy';
+import { useStore } from '../storage/StoreContext';
 import { finishMessage } from '../engine/explain';
 import { EquationRow, StepGrid } from './equation/Steps';
 
 /** A read-only walk through an example, one step at a time, produced by the real engine. */
 export function WorkedExample({ equation, title = 'Worked example' }: { equation: string; title?: string }) {
   const parsed = useMemo(() => parseEquation(equation), [equation]);
-  const steps = useMemo(() => (parsed.ok ? solveSteps(parsed.equation) : []), [parsed]);
+  const { allowDivideFirst, forceDistributeFirst } = useStore().data.prefs;
+  const steps = useMemo(
+    () => (parsed.ok ? solveSteps(parsed.equation, undefined, { allowDivideFirst, forceDistributeFirst }) : []),
+    [parsed, allowDivideFirst, forceDistributeFirst],
+  );
   const [shown, setShown] = useState(0);
   if (!parsed.ok) return null;
   const last = steps.length > 0 ? steps[steps.length - 1].after : parsed.equation;

@@ -84,6 +84,8 @@ export type MoveErrorCode =
   | 'not-group'
   | 'nothing-to-combine'
   | 'too-large'
+  | 'divide-first-blocked'
+  | 'distribute-first'
   | 'internal';
 
 export interface MoveError {
@@ -384,8 +386,44 @@ function combine(eq: Equation, side: Side, kind: 'const' | 'var'): MoveResult {
 
 // ---------------------------------------------------------------- public entry point
 
-export function applyCommand(eq: Equation, cmd: Command): MoveResult {
+/**
+ * Optional classroom rules. The defaults change nothing, so the engine, the generator and the
+ * tests behave exactly as before unless the interface passes rules in from Settings.
+ */
+export interface MoveRules {
+  /** When false, "divide both sides" cannot be used on a term that still has parentheses. */
+  readonly allowDivideFirst: boolean;
+  /** When true, parentheses anywhere in the equation must be distributed before any other move. */
+  readonly forceDistributeFirst: boolean;
+}
+
+export const NO_RULES: MoveRules = { allowDivideFirst: true, forceDistributeFirst: false };
+
+const hasGroup = (eq: Equation): boolean => [...eq.left, ...eq.right].some((t) => t.core.kind === 'group');
+
+const isZeroConst = (t: Term): boolean => t.core.kind === 'const' && t.coef.isZero();
+
+/** "0 - 3x" is shown as "-3x": a zero next to other terms is simply dropped. */
+const dropExtraZeros = (terms: readonly Term[]): readonly Term[] =>
+  terms.length > 1 && terms.some(isZeroConst) ? terms.filter((t) => !isZeroConst(t)) : terms;
+
+function checkRules(eq: Equation, cmd: Command, rules: MoveRules): MoveResult | null {
+  if (rules.forceDistributeFirst && cmd.type !== 'distribute' && hasGroup(eq)) {
+    return fail('distribute-first', 'There are parentheses in this equation. Distribute them first (select the part in parentheses), then continue.');
+  }
+  if (!rules.allowDivideFirst && cmd.type === 'scale') {
+    const t = sideTerms(eq, cmd.side)[cmd.index];
+    if (t && t.core.kind === 'group') {
+      return fail('divide-first-blocked', 'Dividing everything first is not allowed here. Distribute the number into the parentheses first.');
+    }
+  }
+  return null;
+}
+
+export function applyCommand(eq: Equation, cmd: Command, rules: MoveRules = NO_RULES): MoveResult {
   try {
+    const blocked = checkRules(eq, cmd, rules);
+    if (blocked) return blocked;
     let result: MoveResult;
     switch (cmd.type) {
       case 'addsub':
@@ -404,6 +442,7 @@ export function applyCommand(eq: Equation, cmd: Command): MoveResult {
         return fail('bad-target', 'That action is not supported.');
     }
     if (!result.ok) return result;
+    result = { ok: true, move: { ...result.move, after: { ...result.move.after, left: dropExtraZeros(result.move.after.left), right: dropExtraZeros(result.move.after.right) } } };
     // Independent safety net: a committed move must never change the solution set.
     if (!sameSolution(solutionSet(eq), solutionSet(result.move.after))) {
       return fail('internal', 'That step would have changed the answer, so it was blocked. Please try a different move.');
