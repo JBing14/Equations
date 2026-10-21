@@ -113,7 +113,7 @@ export const defaultData = (): StoreData => ({
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown, max: number, fallback = ''): string =>
-  typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max) : fallback;
+  typeof v === 'string' ? v.replace(/\p{Cc}/gu, ' ').trim().slice(0, max) : fallback;
 const int = (v: unknown, lo: number, hi: number, fallback: number): number =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : fallback;
 const bool = (v: unknown, fallback: boolean): boolean => (typeof v === 'boolean' ? v : fallback);
