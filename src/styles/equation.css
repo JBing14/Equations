@@ -699,3 +699,25 @@
   color: var(--good);
   font-weight: 700;
 }
+
+/* Live sign change while a term hovers over the other side */
+.drag-ghost.flipped {
+  animation: sign-pop 0.25s ease-out;
+}
+@keyframes sign-pop {
+  0% { transform: translate(-50%, -135%) scale(0.8); }
+  60% { transform: translate(-50%, -135%) scale(1.18); }
+  100% { transform: translate(-50%, -135%) scale(1); }
+}
+
+@media (max-width: 600px) {
+  .board {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+  }
+  .controls {
+    gap: 0.4rem;
+  }
+  .drag-ghost {
+    font-size: 1.35rem;
+  }
+}

@@ -55,6 +55,14 @@ const DRAG_THRESHOLD = 6;
 const APPLY_MS = 1100;
 const SIMPLIFY_MS = 1000;
 
+/** "+ 5" becomes "− 5", "− 5" becomes "+ 5", and a bare leading term gets a minus. */
+function flipLabel(label: string): string {
+  const t = label.trim();
+  if (t.startsWith('+')) return '−' + t.slice(1);
+  if (t.startsWith('−') || t.startsWith('-')) return '+' + t.slice(1);
+  return '−' + t;
+}
+
 export function Workspace(props: WorkspaceProps) {
   const { data, update } = useStore();
   const prefs = data.prefs;
@@ -107,7 +115,9 @@ export function Workspace(props: WorkspaceProps) {
   const dragRef = useRef<DragInfo | null>(null);
   const lastZoneKey = useRef('');
   const cleanupRef = useRef<(() => void) | null>(null);
-  const [ghost, setGhost] = useState<{ x: number; y: number; label: string; valid: boolean | null } | null>(null);
+  const [ghost, setGhost] = useState<{ x: number; y: number; label: string; valid: boolean | null; flipped: boolean } | null>(null);
+  const shortcutRef = useRef(prefs.signShortcut);
+  shortcutRef.current = prefs.signShortcut;
 
   useEffect(() => () => cleanupRef.current?.(), []);
 
@@ -149,7 +159,10 @@ export function Workspace(props: WorkspaceProps) {
       }
       const zone = zoneAt(ev.clientX, ev.clientY);
       const evaluation = zone ? evaluateDrop(live.current.eq, d.source, zone) : null;
-      setGhost({ x: ev.clientX, y: ev.clientY, label: d.label, valid: evaluation ? evaluation.valid : null });
+      // Live sign change: with the shortcut switched on, a term shows its opposite sign while it hovers over the other side.
+      const crossing =
+        shortcutRef.current && d.source.kind === 'term' && zone !== null && zone.side !== d.source.side && evaluation !== null && evaluation.valid;
+      setGhost({ x: ev.clientX, y: ev.clientY, label: crossing ? flipLabel(d.label) : d.label, valid: evaluation ? evaluation.valid : null, flipped: crossing });
       const key = `${JSON.stringify(zone)}|${evaluation ? evaluation.valid : 'n'}`;
       if (key !== lastZoneKey.current) {
         lastZoneKey.current = key;
@@ -429,7 +442,7 @@ export function Workspace(props: WorkspaceProps) {
       <History history={history} dispatch={dispatch} />
 
       {ghost && (
-        <div className={`drag-ghost${ghost.valid === true ? ' ok' : ghost.valid === false ? ' no' : ''}`} style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
+        <div className={`drag-ghost${ghost.valid === true ? ' ok' : ghost.valid === false ? ' no' : ''}${ghost.flipped ? ' flipped' : ''}`} style={{ left: ghost.x, top: ghost.y }} aria-hidden="true">
           {ghost.label}
         </div>
       )}

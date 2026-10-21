@@ -15,7 +15,9 @@ export function History({ history, dispatch }: { history: HistoryState; dispatch
   const endRef = useRef<HTMLLIElement | null>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    // Scroll only the strip of cards, never the page (scrollIntoView would jump the whole screen).
+    const list = endRef.current?.parentElement;
+    if (list) list.scrollLeft = list.scrollWidth;
   }, [moves.length]);
 
   return (

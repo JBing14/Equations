@@ -696,3 +696,34 @@ legend {
 .app .tile {
   transition: transform 0.15s, border-color 0.15s;
 }
+
+/* ---------------------------------------------------------------- phones */
+@media (max-width: 600px) {
+  /* The header scrolls away with the page so the equation gets the whole screen. */
+  .app-header {
+    position: static;
+    gap: 0.4rem;
+    padding-block: 0.5rem;
+  }
+  .app-header nav {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-header nav ul,
+  .app-header nav {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .btn,
+  button {
+    min-height: 44px; /* comfortable touch target */
+  }
+  .card,
+  .panel {
+    padding: 0.8rem;
+  }
+  .drop-hint {
+    display: none; /* the sentence under the equation says the same thing */
+  }
+}
