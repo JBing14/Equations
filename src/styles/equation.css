@@ -721,3 +721,17 @@
     font-size: 1.35rem;
   }
 }
+
+/* A lone term such as 5x: grab the letter to move the whole term; the number chip divides. */
+.has-chips {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 12px;
+}
+.has-chips.selected {
+  background: var(--select-soft);
+  outline: 3px solid var(--select);
+}
+.has-chips .chip {
+  cursor: pointer;
+}

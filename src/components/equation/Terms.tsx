@@ -138,8 +138,21 @@ export function SideRow(props: SideRowProps) {
             factorDen !== null && p.den !== null
               ? chipButton(denSel, p.den, `The number dividing ${eq.variable} on the ${side} side: ${p.den}. Select to undo it on both sides.`, hintAt(i, 'den'))
               : undefined;
+          // The whole term can also be grabbed (by the letter, not the number chip) and moved like any other term.
+          const wholeSel: Selection = { kind: 'term', side, index: i };
           return (
-            <span key={key} className={`${kindClass} has-chips${struck}`} role="group" aria-label={`${spoken(formatSignedTerm(term, eq))} on the ${side} side`}>
+            <span
+              key={key}
+              className={`${kindClass} has-chips${sameSelection(selection, wholeSel) ? ' selected' : ''}${struck}`}
+              role="group"
+              aria-label={`${spoken(formatSignedTerm(term, eq))} on the ${side} side`}
+              data-term-side={side}
+              data-term-index={i}
+              onPointerDown={(e) => {
+                if (disabled || (e.target as HTMLElement).closest('.chip')) return;
+                props.onPointerDown?.(e, wholeSel, formatSignedTerm(term, eq));
+              }}
+            >
               <TermBody term={term} eq={eq} coefSlot={coefNode} denSlot={denNode} />
             </span>
           );

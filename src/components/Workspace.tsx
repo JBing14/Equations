@@ -529,6 +529,10 @@ function SelectionPanel({ rules, eq, selection, previewCommand, onCommit, onPrev
   if (!term) return null;
 
   const options: Command[] = [commandForSelection(selection)];
+  if (selection.kind === 'factor' && term.core.kind === 'var') {
+    // Keyboard and tap route for moving the whole term (for example 5x) instead of dividing.
+    options.push({ type: 'addsub', side: selection.side, index: selection.index });
+  }
   if (selection.kind === 'term') {
     if (term.core.kind === 'group') options.push({ type: 'distribute', side: selection.side, index: selection.index });
     if (term.core.kind !== 'group' && terms.filter((t) => t.core.kind === term.core.kind).length >= 2) {
