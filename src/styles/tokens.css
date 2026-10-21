@@ -1,0 +1,39 @@
+/* Design tokens: one place for the colors, type and spacing used everywhere. */
+:root {
+  --bg: #f3f4fb;
+  --surface: #ffffff;
+  --ink: #1d2140;
+  --muted: #565b7c;
+  --line: #d3d7ee;
+
+  --brand: #4338ca;
+  --brand-ink: #ffffff;
+  --brand-soft: #e0e7ff;
+
+  /* Roles in the equation (always paired with a shape or label, never color alone) */
+  --var: #6d28d9; /* variables: violet, dotted underline */
+  --var-soft: #ede9fe;
+  --const: #0f766e; /* plain numbers: teal, solid underline */
+  --const-soft: #ccfbf1;
+  --op: #9a3412; /* inverse operations: burnt orange, pill with a symbol */
+  --op-soft: #ffedd5;
+  --select: #f59e0b; /* selected term: amber ring */
+  --select-soft: #fef3c7;
+  --cancel: #be123c; /* cancellation: strike-through */
+  --divider: #334155; /* the dashed center line */
+
+  --good: #166534;
+  --good-soft: #dcfce7;
+  --bad: #b91c1c;
+  --bad-soft: #fee2e2;
+  --focus: #1d4ed8;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(29, 33, 64, 0.06), 0 8px 22px rgba(29, 33, 64, 0.08);
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --math: 'Cambria Math', 'STIX Two Math', 'Latin Modern Math', 'Times New Roman', Georgia, serif;
+
+  --gutter: 16px;
+}

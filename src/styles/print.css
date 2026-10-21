@@ -1,0 +1,74 @@
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .app-header,
+  .app-footer,
+  .skip-link {
+    display: none !important;
+  }
+  .page > *:not(.print-only) {
+    display: none !important;
+  }
+  .page {
+    padding: 0;
+    max-width: none;
+  }
+  .print-only {
+    display: block;
+  }
+  .print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .print-sheet h1 {
+    font-size: 22pt;
+  }
+  .print-meta {
+    margin: 0.4rem 0 0.8rem;
+    font-size: 12pt;
+  }
+  .print-instructions {
+    font-size: 12pt;
+    margin-bottom: 1rem;
+  }
+  .print-problems,
+  .print-answers {
+    list-style: decimal;
+    padding-left: 1.8rem;
+    margin: 0;
+  }
+  .print-problems li {
+    break-inside: avoid;
+    margin-bottom: 0.4rem;
+    padding: 0.3rem 0;
+  }
+  .print-eq {
+    font-family: var(--math);
+    font-size: 18pt;
+  }
+  .print-work {
+    display: block;
+    height: 3.2cm;
+    border-bottom: 1px dotted #888;
+  }
+  .print-answers li {
+    margin-bottom: 0.5rem;
+    font-size: 14pt;
+  }
+  .print-ans {
+    font-weight: 700;
+  }
+}
