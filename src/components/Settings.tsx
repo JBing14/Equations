@@ -48,9 +48,9 @@ export function Settings() {
         <p className="muted">Off by default. The shortcut is a shorthand for “do the opposite to both sides.” Turn it on once you understand why it works.</p>
         <label className="check">
           <input type="checkbox" checked={p.allowDivideFirst} onChange={(e) => set({ allowDivideFirst: e.target.checked })} data-testid="allow-divide-first" />
-          Allow dividing everything first (for example dividing both sides of 2(x + 3) = 14 by 2)
+          Allow dividing everything first (for example dividing both sides of 2(x + 3) = 14, or of 5x − 9 = 2x, by 2)
         </label>
-        <p className="muted">Off by default, because dividing before the parentheses are gone can be confusing. When it is off, students distribute first.</p>
+        <p className="muted">Off by default, because dividing before the parentheses are gone and the like terms are combined can be confusing. When it is off, dividing both sides is only allowed as the last step.</p>
         <label className="check">
           <input type="checkbox" checked={p.forceDistributeFirst} onChange={(e) => set({ forceDistributeFirst: e.target.checked })} data-testid="force-distribute-first" />
           Require distributing first when there are parentheses

@@ -3,6 +3,8 @@ import { P, F } from './helpers';
 import { applyCommand, type MoveRules } from '../src/engine/moves';
 import { solveSteps, suggestMove } from '../src/engine/strategy';
 import { sameSolution, solutionSet } from '../src/engine/linear';
+import { generateProblem } from '../src/engine/generator';
+import { status } from '../src/engine/status';
 
 const STRICT: MoveRules = { allowDivideFirst: false, forceDistributeFirst: false };
 const FORCE: MoveRules = { allowDivideFirst: true, forceDistributeFirst: true };
@@ -38,6 +40,29 @@ describe('classroom rules', () => {
     const r = applyCommand(eq, cmd, STRICT);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('divide-first-blocked');
+  });
+  it('blocks dividing both sides before terms are combined', () => {
+    const div = { type: 'scale', side: 'right', index: 0, part: 'coef' } as const;
+    const r = applyCommand(P('5x - 9 = 2x'), div, STRICT);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('divide-first-blocked');
+    expect(applyCommand(P('5x - 9 = 2x'), div).ok).toBe(true); // default engine unchanged
+    expect(applyCommand(P('2x = 3 + 5'), { type: 'scale', side: 'left', index: 0, part: 'coef' }, STRICT).ok).toBe(false);
+  });
+  it('still allows dividing as the last step', () => {
+    expect(applyCommand(P('3x = 12'), { type: 'scale', side: 'left', index: 0, part: 'coef' }, STRICT).ok).toBe(true);
+    expect(applyCommand(P('12 = 3x'), { type: 'scale', side: 'right', index: 0, part: 'coef' }, STRICT).ok).toBe(true);
+  });
+  it('every generated problem still solves with dividing-first off', () => {
+    for (const level of [1, 2, 3, 4] as const) {
+      for (let i = 0; i < 25; i++) {
+        const eq = P(generateProblem(level, `rules-${level}`, i));
+        const steps = solveSteps(eq, undefined, STRICT);
+        expect(steps.length).toBeGreaterThan(0);
+        expect(sameSolution(solutionSet(steps[steps.length - 1].after), solutionSet(eq))).toBe(true);
+        expect(status(steps[steps.length - 1].after).kind).not.toBe('working');
+      }
+    }
   });
   it('hints and the worked solution distribute instead when dividing first is not allowed', () => {
     const eq = P('2(x + 3) = 14');

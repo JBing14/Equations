@@ -416,6 +416,15 @@ function checkRules(eq: Equation, cmd: Command, rules: MoveRules): MoveResult | 
     if (t && t.core.kind === 'group') {
       return fail('divide-first-blocked', 'Dividing everything first is not allowed here. Distribute the number into the parentheses first.');
     }
+    // Dividing (or multiplying) both sides is a last step: the other side must already be one plain number,
+    // so nothing else gets divided along with it (for example 5x - 9 = 2x must be combined first).
+    const other = sideTerms(eq, otherSide(cmd.side));
+    if (other.length !== 1 || other[0].core.kind !== 'const') {
+      return fail(
+        'divide-first-blocked',
+        'Not yet. Dividing both sides now would also divide other terms. First combine like terms and move terms so the other side is just a number.',
+      );
+    }
   }
   return null;
 }
