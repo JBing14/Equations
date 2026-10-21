@@ -74,7 +74,16 @@ export function StepGrid({ move, phase = 'all', animate = false, divider = true,
         left={<SideRow eq={before} side="left" terms={before.left} mode="static" cancelled={strike ? cancelledOn('left') : []} />}
         right={<SideRow eq={before} side="right" terms={before.right} mode="static" cancelled={strike ? cancelledOn('right') : []} />}
       />
-      {showOp && (
+      {showOp && move.kind === 'distribute' && move.expansion && (
+        <Row
+          row={2}
+          badge={false}
+          className="op-row expansion-row"
+          left={move.anchor.side === 'left' ? <span className="expansion" data-testid="expansion">{move.expansion}</span> : null}
+          right={move.anchor.side === 'right' ? <span className="expansion" data-testid="expansion">{move.expansion}</span> : null}
+        />
+      )}
+      {showOp && !(move.kind === 'distribute' && move.expansion) && (
         <Row
           row={2}
           badge={false}

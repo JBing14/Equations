@@ -735,3 +735,14 @@
 .has-chips .chip {
   cursor: pointer;
 }
+
+/* Distribute: the middle row spells out every multiplication, like paper algebra */
+.expansion {
+  font-family: var(--math);
+  color: var(--brand);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.step.animate .expansion {
+  animation: chip-in calc(0.6s * var(--speed, 1)) ease-out both;
+}

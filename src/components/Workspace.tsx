@@ -278,6 +278,14 @@ export function Workspace(props: WorkspaceProps) {
 
   // ---- derived UI data
   const combos = availableCombines(activeEq);
+  const distributeCmd: Command | null = (() => {
+    for (const side of ['left', 'right'] as const) {
+      const i = sideTerms(activeEq, side).findIndex((t) => t.core.kind === 'group');
+      if (i >= 0) return { type: 'distribute', side, index: i };
+    }
+    return null;
+  })();
+  const distributeLabel = distributeCmd ? applyCommand(activeEq, distributeCmd, rules) : null;
   const finish = !busy && state.phase !== 'dragging' ? finishMessage(activeEq) : null;
   const shownHints = hints.levels.slice(0, state.hintsShown);
 
@@ -348,6 +356,11 @@ export function Workspace(props: WorkspaceProps) {
             <button type="button" className="btn" onClick={() => dispatch({ type: 'hint' })} disabled={busy || state.hintsShown >= 4 || hints.finished}>
               💡 Hint{state.hintsShown > 0 ? ` (${state.hintsShown}/4)` : ''}
             </button>
+            {distributeCmd && distributeLabel && distributeLabel.ok && (
+              <button type="button" className="btn" disabled={busy} onClick={() => commit(distributeCmd)} data-testid="distribute-btn">
+                ✨ {distributeLabel.move.label}
+              </button>
+            )}
             {combos.length > 0 && (
               <button type="button" className="btn" disabled={busy} onClick={() => commit(combos[0])} data-testid="combine-btn">
                 ➕ Combine like terms
@@ -529,12 +542,15 @@ function SelectionPanel({ rules, eq, selection, previewCommand, onCommit, onPrev
   if (!term) return null;
 
   const options: Command[] = [commandForSelection(selection)];
+  if (selection.kind === 'term' && term.core.kind === 'group') {
+    // For parentheses the useful move is distributing; subtracting the whole group comes second.
+    options.unshift({ type: 'distribute', side: selection.side, index: selection.index });
+  }
   if (selection.kind === 'factor' && term.core.kind === 'var') {
     // Keyboard and tap route for moving the whole term (for example 5x) instead of dividing.
     options.push({ type: 'addsub', side: selection.side, index: selection.index });
   }
   if (selection.kind === 'term') {
-    if (term.core.kind === 'group') options.push({ type: 'distribute', side: selection.side, index: selection.index });
     if (term.core.kind !== 'group' && terms.filter((t) => t.core.kind === term.core.kind).length >= 2) {
       options.push({ type: 'combine', side: selection.side, kind: term.core.kind as 'const' | 'var' });
     }

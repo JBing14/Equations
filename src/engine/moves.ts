@@ -73,6 +73,8 @@ export interface MoveData {
   readonly why: string;
   /** The "move it and change the sign" shorthand, shown only when the student turns it on. */
   readonly shortcut: string | null;
+  /** For distribute: the side written out with every product shown, such as "3·x + 3·2". */
+  readonly expansion?: string | null;
 }
 
 export type MoveErrorCode =
@@ -307,6 +309,18 @@ function distribute(eq: Equation, side: Side, index: number): MoveResult {
   const newTerms = nonEmpty([...terms.slice(0, index), ...inner, ...terms.slice(index + 1)]);
   const after = withSide(eq, side, unwrapSide(newTerms));
 
+  // The side with each multiplication spelled out: 3(x + 2) becomes "3·x + 3·2".
+  const wrap = (text: string, negative: boolean): string => (negative ? `(${MINUS}${text})` : text);
+  const fWrapped = wrap(formatRational(factor.abs(), eq.decimal), factor.sign() < 0);
+  const products = t.core.terms.map((u) => `${fWrapped}·${wrap(formatTermBody(u, eq), u.sign === -1)}`).join(' + ');
+  const expansion = terms
+    .map((u, i) => {
+      const body = i === index ? products : formatTermBody(u, eq);
+      if (i === 0) return i === index || u.sign === 1 ? body : `${MINUS}${body}`;
+      return i === index ? `+ ${body}` : `${u.sign === 1 ? '+' : MINUS} ${body}`;
+    })
+    .join(' ');
+
   const plain = t.sign === 1 && t.coef.equals(Rational.ONE);
   const minusOnly = t.sign === -1 && t.coef.equals(Rational.ONE);
   const fText = formatRational(factor, eq.decimal);
@@ -333,6 +347,7 @@ function distribute(eq: Equation, side: Side, index: number): MoveResult {
         : `${fText} times each term inside gives ${formatSum(inner.length ? inner : [zeroTerm()], eq)}. Only the form changed, so the equation is still balanced.`,
       why: 'The distributive property says a(b + c) = ab + ac.',
       shortcut: null,
+      expansion: plain ? null : expansion,
     },
   };
 }

@@ -92,3 +92,27 @@ describe('classroom rules', () => {
     }
   });
 });
+
+describe('distribute shows every multiplication', () => {
+  const dist = (text: string, side: 'left' | 'right' = 'left', index = 0) => {
+    const r = applyCommand(P(text), { type: 'distribute', side, index });
+    if (!r.ok) throw new Error(r.error.message);
+    return r.move;
+  };
+  it('3(x + 2) shows 3·x + 3·2 and becomes 3x + 6', () => {
+    const m = dist('3(x + 2) = 18');
+    expect(m.expansion).toBe('3·x + 3·2');
+    expect(F(m.after)).toBe('3x + 6 = 18');
+  });
+  it('shows negative inner terms in parentheses', () => {
+    expect(dist('2(x - 4) = 6').expansion).toBe('2·x + 2·(−4)');
+  });
+  it('shows a negative factor', () => {
+    const m = dist('-(x + 3) = 2');
+    expect(m.expansion).toBe('(−1)·x + (−1)·3');
+    expect(F(m.after)).toBe('-x - 3 = 2');
+  });
+  it('keeps the other terms on the side', () => {
+    expect(dist('4(x + 1) - 3 = 17').expansion).toBe('4·x + 4·1 − 3');
+  });
+});
