@@ -727,3 +727,38 @@ legend {
     display: none; /* the sentence under the equation says the same thing */
   }
 }
+
+/* ---------------------------------------------------------------- custom: a blank canvas */
+.canvas-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.canvas-form .text-input {
+  flex: 1;
+}
+.canvas-page .error-msg {
+  margin-top: 0;
+}
+.workspace.canvas .stage {
+  padding-block: 1.4rem;
+  min-height: 15rem;
+}
+.workspace.canvas .board {
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3.2rem);
+}
+.workspace.canvas .controls {
+  justify-content: center;
+}
+.workspace.canvas .workspace-grid {
+  display: block;
+}
+@media (max-width: 600px) {
+  .workspace.canvas .board {
+    font-size: clamp(1.25rem, 5.6vw, 1.7rem);
+  }
+  .workspace.canvas .stage {
+    padding-inline: 0.5rem;
+    min-height: 0;
+  }
+}

@@ -38,6 +38,8 @@ export interface WorkspaceProps {
   equation: Equation;
   initialCommands?: readonly Command[];
   allowReveal?: boolean;
+  /** A bare canvas: just the equation, undo/redo/reset and the distribute/combine buttons. */
+  canvas?: boolean;
   onCommands?: (commands: Command[]) => void;
   onCheck?: (outcome: CheckOutcome) => void;
   onReveal?: () => void;
@@ -295,7 +297,7 @@ export function Workspace(props: WorkspaceProps) {
 
   return (
     <div
-      className="workspace"
+      className={`workspace${props.canvas ? ' canvas' : ''}`}
       data-testid="workspace"
       data-phase={state.phase}
       data-divider={state.dividerShown ? 'on' : 'off'}
@@ -317,13 +319,14 @@ export function Workspace(props: WorkspaceProps) {
             state={state}
             activeEq={activeEq}
             shortcut={prefs.signShortcut}
+            canvas={!!props.canvas}
             rules={rules}
             onCommit={commit}
             onPreview={(command) => dispatch({ type: 'preview', command })}
             onDeselect={() => dispatch({ type: 'deselect' })}
           />
 
-          {finish && (
+          {finish && !props.canvas && (
             <p className={`finish ${st.kind === 'solved' ? 'ok' : 'note'}`} data-testid="finish">
               <strong>{st.kind === 'solved' ? 'Solved! ' : 'Finished. '}</strong>
               {finish}
@@ -331,7 +334,7 @@ export function Workspace(props: WorkspaceProps) {
             </p>
           )}
 
-          {shownHints.length > 0 && (
+          {!props.canvas && shownHints.length > 0 && (
             <div className="hints" role="status" data-testid="hints">
               <strong>Hints</strong>
               <ol>
@@ -341,7 +344,7 @@ export function Workspace(props: WorkspaceProps) {
               </ol>
             </div>
           )}
-          {state.hintsShown > 0 && hints.finished && <p className="muted">This equation is already finished. Press Check answer.</p>}
+          {!props.canvas && state.hintsShown > 0 && hints.finished && <p className="muted">This equation is already finished. Press Check answer.</p>}
 
           <div className="controls" role="group" aria-label="Workspace controls">
             <button type="button" className="btn" onClick={() => dispatch({ type: 'undo' })} disabled={!canUndo(history)}>
@@ -353,9 +356,11 @@ export function Workspace(props: WorkspaceProps) {
             <button type="button" className="btn" onClick={() => dispatch({ type: 'reset' })} disabled={history.moves.length === 0 && !state.dividerShown}>
               ⟲ Reset
             </button>
+            {!props.canvas && (
             <button type="button" className="btn" onClick={() => dispatch({ type: 'hint' })} disabled={busy || state.hintsShown >= 4 || hints.finished}>
               💡 Hint{state.hintsShown > 0 ? ` (${state.hintsShown}/4)` : ''}
             </button>
+            )}
             {distributeCmd && distributeLabel && distributeLabel.ok && (
               <button type="button" className="btn" disabled={busy} onClick={() => commit(distributeCmd)} data-testid="distribute-btn">
                 ✨ {distributeLabel.move.label}
@@ -373,6 +378,7 @@ export function Workspace(props: WorkspaceProps) {
             )}
           </div>
 
+          {!props.canvas && (
           <div className="settings-strip">
             <fieldset className="seg">
               <legend>Animation speed</legend>
@@ -392,7 +398,9 @@ export function Workspace(props: WorkspaceProps) {
               Show balance scale
             </label>
           </div>
+          )}
 
+          {!props.canvas && (
           <form
             className="check-panel"
             onSubmit={(e) => {
@@ -427,9 +435,10 @@ export function Workspace(props: WorkspaceProps) {
               {checkMsg ? (checkMsg.kind === 'success' ? '✔ ' : '✖ ') + checkMsg.text : ''}
             </p>
           </form>
+          )}
         </section>
 
-        {prefs.showBalance && (
+        {prefs.showBalance && !props.canvas && (
           <aside className="card scale-card" aria-label="Balance scale">
             <h2 className="side-title">Balance scale</h2>
             <BalanceScale eq={eq} move={state.phase === 'applying' ? (state.lastMove?.data ?? null) : null} />
@@ -437,7 +446,7 @@ export function Workspace(props: WorkspaceProps) {
         )}
       </div>
 
-      {revealed && (
+      {revealed && !props.canvas && (
         <section className="card solution" aria-labelledby="solution-title" data-testid="solution">
           <div className="section-head">
             <h2 id="solution-title">Worked solution</h2>
@@ -475,13 +484,14 @@ interface GuideProps {
   state: WorkspaceState;
   activeEq: Equation;
   shortcut: boolean;
+  canvas: boolean;
   rules: MoveRules;
   onCommit: (c: Command) => void;
   onPreview: (c: Command | null) => void;
   onDeselect: () => void;
 }
 
-function Guide({ state, activeEq, shortcut, rules, onCommit, onPreview, onDeselect }: GuideProps) {
+function Guide({ state, activeEq, shortcut, canvas, rules, onCommit, onPreview, onDeselect }: GuideProps) {
   const { selection, drag, lastMove, phase, feedback, previewCommand } = state;
   const inspecting = state.history.inspect !== null;
   let content: ReactNode;
@@ -500,6 +510,8 @@ function Guide({ state, activeEq, shortcut, rules, onCommit, onPreview, onDesele
     );
   } else if (selection) {
     content = <SelectionPanel rules={rules} eq={activeEq} selection={selection} previewCommand={previewCommand} onCommit={onCommit} onPreview={onPreview} onDeselect={onDeselect} />;
+  } else if (canvas) {
+    content = null; // a blank canvas: no tips and no explanations unless something needs attention
   } else if (lastMove) {
     const m = lastMove.data;
     content = (
@@ -524,6 +536,7 @@ function Guide({ state, activeEq, shortcut, rules, onCommit, onPreview, onDesele
     );
   }
 
+  if (canvas && !content && !(feedback && feedback.kind === 'error')) return null;
   return (
     <div className="guide" aria-live="off" data-testid="guide">
       {feedback && feedback.kind === 'error' && (
